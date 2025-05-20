@@ -20,11 +20,9 @@ function love.load()
     sonidoDisparo = love.audio.newSource("sonidos/disparo.mp3", "static")
     sonidoExplosion = love.audio.newSource("sonidos/explosion.mp3", "static")
 
-    -- Posición inicial del jugador
     jugadorX = 370
     jugadorY = 500
 
-    -- Configuración del fondo
     love.graphics.setBackgroundColor(0, 128, 0)
 end
 
@@ -37,44 +35,36 @@ function love.update(dt)
             jugadorX = jugadorX + 200 * dt
         end
 
-        -- Limitar el movimiento del jugador dentro de la pantalla
         jugadorX = math.max(0, math.min(love.graphics.getWidth() - jugador:getWidth(), jugadorX))
 
-        -- Actualizar balas
         for i = #balas, 1, -1 do
             local bala = balas[i]
             bala.y = bala.y - velocidadBala * dt
 
-            -- Eliminar balas que están fuera de la pantalla
             if bala.y < 0 then
                 table.remove(balas, i)
             end
         end
 
-        -- Generar enemigos cada segundo
         tiempoEnemigos = tiempoEnemigos + dt
         if tiempoEnemigos > 1 then
             generarEnemigo()
             tiempoEnemigos = 0
         end
 
-        -- Actualizar enemigos
         for i = #enemigos, 1, -1 do
             local enemigo = enemigos[i]
-            enemigo.y = enemigo.y + velocidadEnemigo * dt -- Mover el enemigo hacia abajo
+            enemigo.y = enemigo.y + velocidadEnemigo * dt 
 
-            -- Verificar colisiones con el jugador
             if colision(jugadorX, jugadorY, jugador:getWidth(), jugador:getHeight(), enemigo.x, enemigo.y, enemigoImg:getWidth(), enemigoImg:getHeight()) then
                 gameOver = true
             end
 
-            -- Eliminar enemigos que están fuera de la pantalla
             if enemigo.y > love.graphics.getHeight() then
                 table.remove(enemigos, i)
             end
         end
 
-        -- Verificar colisiones entre balas y enemigos
         for i = #balas, 1, -1 do
             local bala = balas[i]
             for j = #enemigos, 1, -1 do
@@ -94,29 +84,23 @@ function love.update(dt)
 end
 
 function love.draw()
-    -- Dibujar el fondo azul 
     love.graphics.setColor(0, 0, 1)
     love.graphics.rectangle("fill", 200, 0, 400, 700)
 
-    -- Dibujar el jugador
     love.graphics.setColor(1, 1, 1)
     love.graphics.draw(jugador, jugadorX, jugadorY)
 
-    -- Dibujar balas
     for _, bala in ipairs(balas) do
         love.graphics.draw(balaImg, bala.x, bala.y)
     end
 
-    -- Dibujar enemigos
     for _, enemigo in ipairs(enemigos) do
         love.graphics.draw(enemigoImg, enemigo.x, enemigo.y)
     end
 
-    -- Mostrar puntuación
     love.graphics.setColor(0, 0, 0) 
     love.graphics.print("Puntuación: " .. puntuacion, 10, 10)
 
-    -- Pantalla de Game Over
     if gameOver then
         love.graphics.setColor(1, 0, 0) 
 
