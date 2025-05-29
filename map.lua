@@ -5,16 +5,16 @@ function Map.new()
     local self = setmetatable({}, Map)
     self.scroll = 0
     self.speed = 200
-    self.patternH = 600 -- alto de un "tile" de fondo, puedes ponerle el alto de tu imagen de fondo si tienes
+    self.patternH = 600
     return self
 end
 
 function Map:update(dt, speed)
 -- Control de velocidad
 if love.keyboard.isDown("up") then
-    self.speed = math.min(self.speed + 60*dt, 300) -- máxima velocidad
+    self.speed = math.min(self.speed + 60*dt, 300) 
 elseif love.keyboard.isDown("down") then
-    self.speed = math.max(self.speed - 60*dt, 60) -- mínima velocidad
+    self.speed = math.max(self.speed - 60*dt, 60) 
 end
 self.scroll = (self.scroll + self.speed * dt) % self.patternH
 
