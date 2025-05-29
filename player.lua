@@ -12,7 +12,7 @@ function Player.new()
     self.width = 32
     self.height = 48
     self.fuel = 100
-    self.image = love.graphics.newImage("images/player.png") -- Dibujo de avion
+    self.image = love.graphics.newImage("images/player.png") 
     return self
 end
 
@@ -31,21 +31,18 @@ function Player:draw()
     local lowFuel = self.fuel < 30
     local blink = false
     if lowFuel then
-        -- Parpadea: visible solo medio segundo sí, medio segundo no
         blink = math.floor(love.timer.getTime() * 6) % 2 == 0
-        -- Toca la alarma en bucle
         SoundManager.playLoop("alarm")
     else
-        -- Detiene la alarma si el combustible ya no está bajo
         SoundManager.stop("alarm")
     end
 
     if (not lowFuel) or blink then
         if self.image then
             if lowFuel then
-                love.graphics.setColor(1, 0.3, 0.3) -- Rojizo cuando parpadea bajo de combustible
+                love.graphics.setColor(1, 0.3, 0.3) 
             else
-                love.graphics.setColor(1, 1, 1) -- Normal
+                love.graphics.setColor(1, 1, 1)
             end
             love.graphics.draw(self.image, self.x, self.y)
         else
