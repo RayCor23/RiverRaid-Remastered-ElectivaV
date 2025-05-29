@@ -45,13 +45,11 @@ function love.update(dt)
     player:update(dt)
     map:update(dt)
 
-    -- Balas
     for i=#bullets,1,-1 do
         bullets[i]:update(dt)
         if bullets[i].dead then table.remove(bullets, i) end
     end
 
-    -- Enemigos
     spawnEnemyTimer = spawnEnemyTimer - dt
     if spawnEnemyTimer <= 0 then
         local count = getEnemySpawnCount(score)
@@ -68,7 +66,6 @@ function love.update(dt)
         if enemies[i].dead then table.remove(enemies, i) end
     end
 
-    -- Fuel
     spawnFuelTimer = spawnFuelTimer - dt
     if spawnFuelTimer <= 0 then
         table.insert(fuels, Fuel.new(math.random(320, 440), -40))
@@ -79,13 +76,11 @@ function love.update(dt)
         if fuels[i].dead then table.remove(fuels, i) end
     end
 
-    -- Explosiones
     for i = #explosions,1,-1 do
         explosions[i]:update(dt)
         if explosions[i].dead then table.remove(explosions, i) end
     end
 
-    -- Colisiones: balas-enemigos
     for i=#enemies,1,-1 do
         local e = enemies[i]
         for j=#bullets,1,-1 do
@@ -100,7 +95,6 @@ function love.update(dt)
         end
     end
 
-    -- Colisiones: jugador-enemigos
     for i=#enemies,1,-1 do
         local e = enemies[i]
         if not e.dead and checkCollision(player.x, player.y, player.width, player.height, e.x, e.y, e.width, e.height) then
@@ -110,7 +104,6 @@ function love.update(dt)
         end
     end
 
-    -- Colisiones: jugador-combustible
     for i=#fuels,1,-1 do
         local f = fuels[i]
         if not f.dead and checkCollision(player.x, player.y, player.width, player.height, f.x, f.y, f.size, f.size) then
@@ -121,7 +114,6 @@ function love.update(dt)
         end
     end
 
-    -- Colisiones: balas-combustible
 for i = #fuels, 1, -1 do
     local f = fuels[i]
     for j = #bullets, 1, -1 do
@@ -136,7 +128,6 @@ for i = #fuels, 1, -1 do
     end
 end
 
-    -- Gastar combustible
     player.fuel = player.fuel - dt * 5
     if player.fuel <= 0 then
         gameOver = true
