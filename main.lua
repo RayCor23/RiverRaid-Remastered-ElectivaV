@@ -1,150 +1,183 @@
-local jugador
-local balas = {}
-local enemigos = {}
-local tiempoEnemigos = 0
-local velocidadBala = 500
-local velocidadEnemigo = 200
-local puntuacion = 0
-local gameOver = false
+local Player = require "player"
+local Enemy = require "enemy"
+local Fuel = require "fuel"
+local Map = require "map"
+local Explosion = require "explosion"
+local SoundManager = require "soundmanager"
 
 function love.load()
     love.window.setTitle("River Raid Remastered")
     love.window.setMode(800, 600)
 
-    
-    jugador = love.graphics.newImage("images/jugador.png")
-    balaImg = love.graphics.newImage("images/bala.png")
-    enemigoImg = love.graphics.newImage("images/enemigo.png")
-    combustibleImg = love.graphics.newImage("images/combustible.png")
+    SoundManager.load()
+    player = Player.new()
+    map = Map.new()
+    bullets = {}
+    enemies = {}
+    fuels = {}
+    explosions = {}
+    score = 0
+    spawnEnemyTimer = 0
+    spawnFuelTimer = 0
+    gameOver = false
 
-    sonidoDisparo = love.audio.newSource("sonidos/disparo.mp3", "static")
-    sonidoExplosion = love.audio.newSource("sonidos/explosion.mp3", "static")
-
-    jugadorX = 370
-    jugadorY = 500
-
-    love.graphics.setBackgroundColor(0, 128, 0)
+    backgroundMusic = love.audio.newSource("sonidos/music.mp3", "stream")
+    backgroundMusic:setLooping(true)
+    backgroundMusic:setVolume(0.5) 
+    backgroundMusic:play()
 end
 
+function getEnemySpawnCount(score)
+    if score < 1000 then
+        return 2
+    elseif score < 2000 then
+        return 3
+    elseif score < 3000 then
+        return 4
+    else
+        return 5 
+    end
+end
+
+
 function love.update(dt)
-    if not gameOver then
-        -- Movimiento del jugador
-        if love.keyboard.isDown("left") then
-            jugadorX = jugadorX - 200 * dt
-        elseif love.keyboard.isDown("right") then
-            jugadorX = jugadorX + 200 * dt
+    if gameOver then return end
+    player:update(dt)
+    map:update(dt)
+
+    -- Balas
+    for i=#bullets,1,-1 do
+        bullets[i]:update(dt)
+        if bullets[i].dead then table.remove(bullets, i) end
+    end
+
+    -- Enemigos
+    spawnEnemyTimer = spawnEnemyTimer - dt
+    if spawnEnemyTimer <= 0 then
+        local count = getEnemySpawnCount(score)
+        for i=1, count do
+            local side = (i % 2 == 0) and "left" or "right"
+            table.insert(enemies, Enemy.new(side, score))
         end
+        spawnEnemyTimer = 1 + math.random()
 
-        jugadorX = math.max(0, math.min(love.graphics.getWidth() - jugador:getWidth(), jugadorX))
+    end
 
-        for i = #balas, 1, -1 do
-            local bala = balas[i]
-            bala.y = bala.y - velocidadBala * dt
+    for i=#enemies,1,-1 do
+        enemies[i]:update(dt)
+        if enemies[i].dead then table.remove(enemies, i) end
+    end
 
-            if bala.y < 0 then
-                table.remove(balas, i)
+    -- Fuel
+    spawnFuelTimer = spawnFuelTimer - dt
+    if spawnFuelTimer <= 0 then
+        table.insert(fuels, Fuel.new(math.random(320, 440), -40))
+        spawnFuelTimer = 2 + math.random() * 4
+    end
+    for i=#fuels,1,-1 do
+        fuels[i]:update(dt)
+        if fuels[i].dead then table.remove(fuels, i) end
+    end
+
+    -- Explosiones
+    for i = #explosions,1,-1 do
+        explosions[i]:update(dt)
+        if explosions[i].dead then table.remove(explosions, i) end
+    end
+
+    -- Colisiones: balas-enemigos
+    for i=#enemies,1,-1 do
+        local e = enemies[i]
+        for j=#bullets,1,-1 do
+            local b = bullets[j]
+            if not b.dead and not e.dead and checkCollision(b.x, b.y, 4, 10, e.x, e.y, e.width, e.height) then
+                b.dead = true
+                e.dead = true
+                score = score + e.score
+                table.insert(explosions, Explosion.new(e.x + e.width/2, e.y + e.height/2))
+                SoundManager.play("explosion")
             end
         end
+    end
 
-        tiempoEnemigos = tiempoEnemigos + dt
-        if tiempoEnemigos > 1 then
-            generarEnemigo()
-            tiempoEnemigos = 0
+    -- Colisiones: jugador-enemigos
+    for i=#enemies,1,-1 do
+        local e = enemies[i]
+        if not e.dead and checkCollision(player.x, player.y, player.width, player.height, e.x, e.y, e.width, e.height) then
+            gameOver = true
+            table.insert(explosions, Explosion.new(player.x+player.width/2, player.y+player.height/2))
+            SoundManager.play("explosion")
         end
+    end
 
-        for i = #enemigos, 1, -1 do
-            local enemigo = enemigos[i]
-            enemigo.y = enemigo.y + velocidadEnemigo * dt 
-
-            if colision(jugadorX, jugadorY, jugador:getWidth(), jugador:getHeight(), enemigo.x, enemigo.y, enemigoImg:getWidth(), enemigoImg:getHeight()) then
-                gameOver = true
-            end
-
-            if enemigo.y > love.graphics.getHeight() then
-                table.remove(enemigos, i)
-            end
+    -- Colisiones: jugador-combustible
+    for i=#fuels,1,-1 do
+        local f = fuels[i]
+        if not f.dead and checkCollision(player.x, player.y, player.width, player.height, f.x, f.y, f.size, f.size) then
+            f.dead = true
+            player.fuel = math.min(player.fuel+40, 100)
+            score = score + 50
+            SoundManager.play("fuel")
         end
+    end
 
-        for i = #balas, 1, -1 do
-            local bala = balas[i]
-            for j = #enemigos, 1, -1 do
-                local enemigo = enemigos[j]
-                if colision(bala.x, bala.y, balaImg:getWidth(), balaImg:getHeight(), enemigo.x, enemigo.y, enemigoImg:getWidth(), enemigoImg:getHeight()) then
-                    table.remove(balas, i)
-                    table.remove(enemigos, j)
-                    puntuacion = puntuacion + 100 
-
-                    love.audio.play(sonidoExplosion)
-
-                    break
-                end
-            end
+    -- Colisiones: balas-combustible
+for i = #fuels, 1, -1 do
+    local f = fuels[i]
+    for j = #bullets, 1, -1 do
+        local b = bullets[j]
+        if not b.dead and not f.dead and checkCollision(b.x, b.y, 4, 10, f.x, f.y, f.size, f.size) then
+            b.dead = true
+            f.dead = true
+            player.fuel = math.max(player.fuel - 20, 0)
+            table.insert(explosions, Explosion.new(f.x + f.size/2, f.y + f.size/2))
+            SoundManager.play("explosion")
         end
+    end
+end
+
+    -- Gastar combustible
+    player.fuel = player.fuel - dt * 5
+    if player.fuel <= 0 then
+        gameOver = true
+        table.insert(explosions, Explosion.new(player.x+player.width/2, player.y+player.height/2))
+        SoundManager.play("explosion")
     end
 end
 
 function love.draw()
-    love.graphics.setColor(0, 0, 1)
-    love.graphics.rectangle("fill", 200, 0, 400, 700)
-
-    love.graphics.setColor(1, 1, 1)
-    love.graphics.draw(jugador, jugadorX, jugadorY)
-
-    for _, bala in ipairs(balas) do
-        love.graphics.draw(balaImg, bala.x, bala.y)
-    end
-
-    for _, enemigo in ipairs(enemigos) do
-        love.graphics.draw(enemigoImg, enemigo.x, enemigo.y)
-    end
-
-    love.graphics.setColor(0, 0, 0) 
-    love.graphics.print("Puntuación: " .. puntuacion, 10, 10)
-
+    map:draw()
+    for _,f in ipairs(fuels) do f:draw() end
+    for _,e in ipairs(enemies) do e:draw() end
+    for _,b in ipairs(bullets) do b:draw() end
+    for _,ex in ipairs(explosions) do ex:draw() end
+    player:draw()
+    love.graphics.setColor(0,0,0)
+    love.graphics.print("Puntuacion: "..score, 10, 10)
+    love.graphics.print(string.format("Combustible: %d", player.fuel), 10, 30)
     if gameOver then
-        love.graphics.setColor(1, 0, 0) 
-
-        love.graphics.printf("Game Over", 0, love.graphics.getHeight() / 2 - 20, love.graphics.getWidth(), "center")
-        love.graphics.printf("Presiona R para reiniciar", 0, love.graphics.getHeight() / 2 + 20, love.graphics.getWidth(), "center")
+        love.graphics.setColor(1,0,0)
+        love.graphics.printf("GAME OVER\nPresiona R para reiniciar", 0, 260, 800, "center")
     end
-    
-    
-    love.graphics.setColor(1, 1, 1)
+
+    if gameOver and not gameOverSoundPlayed then
+        SoundManager.play("gameover")
+        gameOverSoundPlayed = true
+    end
 end
 
 function love.keypressed(key)
-    if key == "space" and not gameOver then
-        dispararBala()
-    elseif key == "r" and gameOver then
-        reiniciarJuego()
+    if gameOver and key == "r" then love.event.quit("restart") end
+    if not gameOver and key == "space" then
+        table.insert(bullets, player:shoot())
+        SoundManager.play("laser")
     end
 end
 
-function dispararBala()
-    local nuevaBala = 
-    { x = jugadorX + jugador:getWidth() / 2 - balaImg:getWidth() / 2, 
-    y = jugadorY }
-    table.insert(balas, nuevaBala)
-
-    love.audio.play(sonidoDisparo)
-
+function checkCollision(x1,y1,w1,h1, x2,y2,w2,h2)
+    return x1 < x2+w2 and x2 < x1+w1 and y1 < y2+h2 and y2 < y1+h1
 end
 
-function generarEnemigo()
-    local nuevoEnemigo = { 
-        x = math.random(0, love.graphics.getWidth() - enemigoImg:getWidth()), 
-        y = -32 }
-    table.insert(enemigos, nuevoEnemigo)
-end
-
-function colision(x1, y1, w1, h1, x2, y2, w2, h2)
-    return x1 < x2 + w2 and x1 + w1 > x2 and y1 < y2 + h2 and y1 + h1 > y2
-end
-
-function reiniciarJuego()
-    balas = {}
-    enemigos = {}
-    tiempoEnemigos = 0
-    puntuacion = 0
-    gameOver = false
+function love.quit()
+    if backgroundMusic then backgroundMusic:stop() end
 end
