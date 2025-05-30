@@ -25,7 +25,7 @@ function SoundManager.play(name)
     end
 
     if SoundManager.sounds and SoundManager.sounds[name] then
-        SoundManager.sounds[name]:stop() -- Asegúrate de que se reinicie si se reproduce varias veces
+        SoundManager.sounds[name]:stop()
         SoundManager.sounds[name]:play()
     end
     
