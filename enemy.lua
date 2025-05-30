@@ -19,7 +19,7 @@ function Enemy.new(entrySide, score)
     self.width = enemyTypes[t].width
     self.height = enemyTypes[t].height
 
-    -- Aplica el multiplicador de velocidad según el score
+
     local speedMultiplier = getSpeedMultiplier(score)
     self.speed = (enemyTypes[t].speed + math.random()*30) * speedMultiplier
 
@@ -29,16 +29,15 @@ function Enemy.new(entrySide, score)
 
     self.y = -self.height
 
-    -- Trayectorias horizontales variadas
     local riverLeft, riverRight = 300, 500
     if entrySide == "left" then
         self.x = riverLeft - self.width
         local mode = math.random(1,3)
-        if mode == 1 then -- cruza todo el río
+        if mode == 1 then
             self.hspeed = (80 + math.random()*40) * speedMultiplier
-        elseif mode == 2 then -- solo entra un poco
+        elseif mode == 2 then
             self.hspeed = (40 + math.random()*30) * speedMultiplier
-        else -- zigzag
+        else
             self.hspeed = 60 * speedMultiplier
             self.zigzag = true
             self.zigzag_timer = 0
@@ -64,7 +63,6 @@ function Enemy:update(dt)
     self.y = self.y + self.speed * dt
     self.x = self.x + self.hspeed * dt
 
-    -- Zigzag horizontal
     if self.zigzag then
         self.zigzag_timer = (self.zigzag_timer or 0) + dt
         if self.zigzag_timer > 0.5 then
