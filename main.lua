@@ -8,7 +8,7 @@ local SoundManager = require "soundmanager"
 function love.load()
     love.window.setTitle("River Raid Remastered")
     love.window.setMode(800, 600)
-
+    
     SoundManager.load()
     player = Player.new()
     map = Map.new()
@@ -143,6 +143,29 @@ function love.draw()
     for _,b in ipairs(bullets) do b:draw() end
     for _,ex in ipairs(explosions) do ex:draw() end
     player:draw()
+    
+ local barX, barY = 10, 70    
+local barW, barH = 300, 24     
+local screenW, screenH = love.graphics.getWidth(), love.graphics.getHeight()
+local barX = (screenW - barW) / 2
+local barY = screenH - barH - 5
+
+love.graphics.setColor(0.2, 0.2, 0.2)
+love.graphics.rectangle("fill", barX, barY, barW, barH)
+
+local fuelPercent = math.max(0, math.min(player.fuel / 100, 1))
+    
+if fuelPercent > 0.5 then
+    love.graphics.setColor(0, 0.8, 0)
+elseif fuelPercent > 0.2 then
+    love.graphics.setColor(1, 0.7, 0)
+else
+    love.graphics.setColor(1, 0, 0)
+end
+love.graphics.rectangle("fill", barX, barY, barW * fuelPercent, barH)
+love.graphics.setColor(1,1,1)
+love.graphics.rectangle("line", barX, barY, barW, barH)
+    
     love.graphics.setColor(0,0,0)
     love.graphics.print("Puntuacion: "..score, 10, 10)
     love.graphics.print(string.format("Combustible: %d", player.fuel), 10, 30)
