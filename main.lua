@@ -168,7 +168,7 @@ love.graphics.rectangle("line", barX, barY, barW, barH)
     
     love.graphics.setColor(0,0,0)
     love.graphics.print("Puntuacion: "..score, 10, 10)
-    love.graphics.print(string.format("Combustible: %d", player.fuel), 10, 30)
+    
     if gameOver then
         love.graphics.setColor(1,0,0)
         love.graphics.printf("GAME OVER\nPresiona R para reiniciar", 0, 260, 800, "center")
