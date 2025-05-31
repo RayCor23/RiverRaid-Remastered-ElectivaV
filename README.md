@@ -3,7 +3,7 @@ Remasterizacion del videojuego River Raid de Atari 2600
 
 # INTEGRANTES:
 * Raislin Cordova C.I.: 30.276.775 secc. 1   @RayCor23
-* Loan Flores C.I.: secc. 1
+* Loan Flores C.I.: secc. 1  @LeónidasZz
 
 # PROFESOR
 Miguel Hernández- @mhliebano
